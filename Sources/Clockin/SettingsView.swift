@@ -19,6 +19,7 @@ struct SettingsView: View {
     @AppStorage("Clockin.MinimalShowEarnings") private var minimalShowEarnings = true
     @AppStorage("Clockin.MinimalShowTRY") private var minimalShowTRY = true
     @AppStorage("Clockin.MinimalShowGoal") private var minimalShowGoal = false
+    @AppStorage("Clockin.MinimalShowSeconds") private var minimalShowSeconds = false
     @AppStorage("Clockin.GoalDailyHours") private var dailyGoalHours = 0.0
     @AppStorage("Clockin.GoalMonthlyHours") private var monthlyGoalHours = 0.0
     @State private var dailyGoalText = ""
@@ -254,12 +255,15 @@ struct SettingsView: View {
                     .font(.system(size: S(8))).foregroundStyle(.tertiary)
                 HStack(spacing: S(12)) {
                     Toggle("Hours", isOn: $minimalShowHours)
-                    Toggle("Earnings", isOn: $minimalShowEarnings)
+                    Toggle("Seconds", isOn: $minimalShowSeconds)
+                        .disabled(!minimalShowHours)
+                        .help("Only affects the running timer; today's total is shown in hours and minutes.")
                 }
                 HStack(spacing: S(12)) {
+                    Toggle("Earnings", isOn: $minimalShowEarnings)
                     Toggle("TL equivalent", isOn: $minimalShowTRY)
-                    Toggle("Goal %", isOn: $minimalShowGoal)
                 }
+                Toggle("Goal %", isOn: $minimalShowGoal)
             }
             .font(.system(size: S(9), weight: .medium))
             .toggleStyle(.checkbox)
