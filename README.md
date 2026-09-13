@@ -1,10 +1,57 @@
-# Clockin for macOS
+# Clockin
 
-A native SwiftUI menu-bar time tracker with pause/resume, hourly earnings, a floating always-visible timer, local persistence, and CSV timesheet import.
+A native time tracker that shows what your work is earning while you do it. Clock in, pause, clock out, and Clockin keeps the hours, the money and the history, including timecards imported from a CSV or pasted from the timecard page.
 
-Double-clicking the app opens a regular Clockin window. Closing it keeps the menu-bar timer running; opening the app again brings the window back.
+The repository holds two apps that share the same data model:
 
-## Build and run
+| App | Where | Requires |
+|---|---|---|
+| **Mac** | repository root (`Sources/Clockin`) | macOS 14, Swift 6 |
+| **iPhone** | [`iOS/`](iOS/README.md) | iOS 17, Xcode |
+
+Each app keeps its own data on its own device. They do not sync.
+
+## What both apps do
+
+**Tracking.** Clock in, pause and resume, clock out or cancel without saving. Start with elapsed time when you forgot to press the button, add a past entry by hand, and edit or delete any session.
+
+**Earnings.** Hourly rates follow a schedule with effective dates, so a raise applies from its day onward and older sessions keep their rate. USD earnings are shown with their Turkish lira equivalent, using the current rate for today and each day's historical rate in history. Rates come from the free, keyless [Frankfurter API](https://frankfurter.dev/) and are cached locally.
+
+**History.** Earnings history with 7D, 30D, 3M and ALL periods, a daily chart, and per-day details.
+
+**Timecard import.**
+- CSV files with the `Start Time`, `End Time`, `Duration`, `Notes` and `Time Sheet Source` columns.
+- Approved entries copied from the timecard page and pasted in, as one row or a full page. The paste preview reads the page's Approved total and warns when the copied rows cover only part of it.
+- Every import is reviewed before it is applied. Identical rows are skipped. A row that overlaps a timer entry, or an entry from the same timecard, on the same day by at least half of the shorter one corrects that entry instead of adding a second copy.
+
+**Progress.** Daily and monthly goals, a work heatmap by day, week or month, reports and records, a level with streaks and 46 badges, and a shareable stats image.
+
+**Focus.** An animated companion, a focus chime at a chosen interval of worked time, and a focus radio.
+
+**Themes.** Eight themes, each with its own typography: Carbon, Neon Orange, Electric Blue, Synthwave, Data Dense, Aurora, Terminal Amber and Daylight.
+
+**Backups.** An automatic backup at most once a day, the last 30 kept, plus manual export and restore.
+
+## Mac app
+
+Clockin lives in the menu bar. Double-clicking the app opens its window; closing the window keeps the menu bar timer running.
+
+- **Window:** Timer, History, Heatmap, Progress and Settings tabs, with interface sizes from 100% to 150%.
+- **Menu bar:** the running timer and today's totals. Minimal mode hides the window and lets you choose which fields the menu bar shows.
+- **Pinned window:** an always-visible timer, resizable from its edges, in five layouts: Compact, Money (live earnings and per-second momentum), Goal, All and Total.
+- **Keyboard shortcuts** that work while Clockin runs:
+
+  | Shortcut | Action |
+  |---|---|
+  | ⌥⌘I | Clock in, or resume a paused session |
+  | ⌥⌘P | Pause or resume |
+  | ⌥⌘O | Clock out |
+  | ⌥⌘E | Open the Clockin window |
+
+- **Focus chime:** off by default; every 1 to 120 minutes of worked time, with a choice of Glass, Ping, Pop, Tink, Funk, Submarine or Sosumi and its own volume.
+- **Updates:** Settings can check GitHub for newer commits, automatically at most every six hours.
+
+### Build and run
 
 ```bash
 chmod +x build-app.sh
@@ -12,63 +59,44 @@ chmod +x build-app.sh
 open dist/Clockin.app
 ```
 
-Run the dependency-free validation suite with:
-
-```bash
-swiftc Sources/Clockin/Models.swift Sources/Clockin/CSVImporter.swift Sources/Clockin/PastedTextImporter.swift Tests/manual/main.swift -o /tmp/clockin-tests
-/tmp/clockin-tests
-```
-
-The store checks (editing a session, unreadable data file) compile `ClockStore` with a stub for the pinned window:
-
-```bash
-swiftc Sources/Clockin/Models.swift Sources/Clockin/ClockStore.swift Sources/Clockin/CSVImporter.swift Sources/Clockin/PastedTextImporter.swift Sources/Clockin/ImportComparison.swift Tests/manual/store/main.swift -o /tmp/clockin-store-tests
-/tmp/clockin-store-tests
-```
-
-The store's save reporting is covered by:
-
-```bash
-swiftc Sources/Clockin/Models.swift Sources/Clockin/ClockStore.swift Sources/Clockin/CSVImporter.swift Sources/Clockin/PastedTextImporter.swift Sources/Clockin/ImportComparison.swift Tests/manual/save/main.swift -o /tmp/clockin-save-tests
-/tmp/clockin-save-tests
-```
-
-Re-importing a corrected timecard, and the cases that must stay separate, are covered by:
-
-```bash
-swiftc Sources/Clockin/Models.swift Sources/Clockin/ClockStore.swift Sources/Clockin/CSVImporter.swift Sources/Clockin/PastedTextImporter.swift Sources/Clockin/ImportComparison.swift Tests/manual/reimport/main.swift -o /tmp/clockin-reimport-tests
-/tmp/clockin-reimport-tests
-```
-
-The optional live API check is:
-
-```bash
-swiftc -parse-as-library Sources/Clockin/ExchangeRates.swift Tests/manual/exchange.swift -o /tmp/clockin-exchange-test
-/tmp/clockin-exchange-test
-```
-
-Clockin lives in the macOS menu bar. Data is stored locally at:
+Data is stored at:
 
 ```text
 ~/Library/Application Support/Clockin/clockin.json
 ```
 
-CSV imports recognize the `Start Time`, `End Time`, `Duration`, `Notes`, and `Time Sheet Source` columns used by the supplied export.
+When no rate schedule exists yet, the stored hourly rate becomes the first rule, effective July 1, 2026. Add an earlier rule to change the rate of older sessions.
 
-Approved entries that are unavailable as CSV can be copied from the timecard page and pasted with **Paste approved timecards**. Both one-row and full-page copies are supported. Imports deduplicate by start time, end time, and duration across both formats.
+### Checks
 
-Use **Start with elapsed time** to continue a timer from manually entered hours and minutes. An active timer can be cancelled without adding earnings, and completed/imported sessions can be deleted from **Earnings History**. Imported external entries within 90 seconds of a Clockin entry are marked as matched instead of duplicated.
+Dependency-free checks, run from the repository root. Each exits non-zero on the first failure.
 
-The pinned widget has **Compact** and **Money** modes in Pay & Data and can also be resized from its edges. Money mode shows live USD earnings, the current TRY equivalent, and precise per-second USD/TRY momentum. The main timer adds the same earning velocity plus progress toward the next 10-unit earnings milestone.
+```bash
+# models, CSV and pasted timecards, currency formatting
+swiftc Sources/Clockin/Models.swift Sources/Clockin/CSVImporter.swift Sources/Clockin/PastedTextImporter.swift Tests/manual/main.swift -o /tmp/clockin-tests && /tmp/clockin-tests
 
-Five live-switching themes are available: **Carbon**, **Neon Orange**, **Electric Blue**, **Synthwave**, and **Data Dense**. The USD/TRY card distinguishes an API-verified check from a cached value or an unavailable service. Paste preview separately reads the page's Approved summary and warns when the visible copied rows cover only part of that total.
+# editing a session, unreadable data file
+swiftc Sources/Clockin/Models.swift Sources/Clockin/ClockStore.swift Sources/Clockin/CSVImporter.swift Sources/Clockin/PastedTextImporter.swift Sources/Clockin/ImportComparison.swift Tests/manual/store/main.swift -o /tmp/clockin-store-tests && /tmp/clockin-store-tests
 
-Themes also change typography: rounded Carbon, terminal-style Neon Orange, clean Electric Blue, serif-display Synthwave, and monospace Data Dense. The optional **10-minute focus beep** is off by default, pauses with the timer, and can be previewed from Pay & Data.
+# failed saves are reported, not shown as success
+swiftc Sources/Clockin/Models.swift Sources/Clockin/ClockStore.swift Sources/Clockin/CSVImporter.swift Sources/Clockin/PastedTextImporter.swift Sources/Clockin/ImportComparison.swift Tests/manual/save/main.swift -o /tmp/clockin-save-tests && /tmp/clockin-save-tests
 
-Focus chimes can use Glass, Ping, Pop, Tink, Funk, Submarine, or Sosumi, with an independent 10–100% volume slider. The default is Glass at 75%.
+# re-importing a corrected timecard, and the cases that must stay separate
+swiftc Sources/Clockin/Models.swift Sources/Clockin/ClockStore.swift Sources/Clockin/CSVImporter.swift Sources/Clockin/PastedTextImporter.swift Sources/Clockin/ImportComparison.swift Tests/manual/reimport/main.swift -o /tmp/clockin-reimport-tests && /tmp/clockin-reimport-tests
+```
 
-Hourly earnings use an effective-date rate schedule. The initial rule applies the current rate from July 1, 2026 onward; earlier sessions retain their stored rate until an earlier override rule is added. Editing a rule immediately recalculates totals, daily charts, session earnings, USD values, and TRY conversions. Daily chart bars reserve top headroom and expose date, worked duration, USD, historical TRY, and exchange rate on hover.
+The optional live exchange rate check needs a network connection:
 
-The main dashboard stays focused on tracking; rate, theme, pin, import, and sound controls live on a separate gear-button Settings screen. Focus chime intervals are configurable from 1 to 120 minutes. Earnings history initially renders 30 sessions and safely expands with Show all / Show recent. All-time duration and earnings include the live session continuously; cancelling removes that contribution, while clocking out transfers it to completed history without changing the total.
+```bash
+swiftc -parse-as-library Sources/Clockin/ExchangeRates.swift Tests/manual/exchange.swift -o /tmp/clockin-exchange-test && /tmp/clockin-exchange-test
+```
 
-USD/TRY data comes from the free, keyless [Frankfurter API](https://frankfurter.dev/) and is cached locally. Historical charts use the published rate for each day (or the previous available business-day rate).
+## iPhone app
+
+The same tracker with what a phone adds: home and lock screen widgets, a Live Activity with pause and clock out on the lock screen and in the Dynamic Island, and Shortcuts actions for clocking in, out and pausing.
+
+Screens are Today, History, Insights and Badges, with Settings behind the gear on Today. Data lives in an App Group on the phone so the widgets can read it.
+
+A few things differ from the Mac on purpose. The level counts only hours worked and streaks, never goals, so it cannot be raised by lowering a goal. The focus chime uses notifications, since an iPhone app is usually suspended.
+
+Building, the project layout and the iPhone checks are in [`iOS/README.md`](iOS/README.md). [`iOS/PARITY.md`](iOS/PARITY.md) compares the two apps feature by feature.
