@@ -66,8 +66,13 @@ struct ClockinData: Codable, Sendable {
 }
 
 enum DurationText {
-    static func clock(_ interval: TimeInterval) -> String {
+    /// `includeSeconds: false` menu cubugundaki dar alan icin; buyuk sayac ve
+    /// sabitlenmis widget saniyeyi gostermeye devam eder.
+    static func clock(_ interval: TimeInterval, includeSeconds: Bool = true) -> String {
         let seconds = max(0, Int(interval))
+        guard includeSeconds else {
+            return String(format: "%02d:%02d", seconds / 3600, (seconds % 3600) / 60)
+        }
         return String(format: "%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60)
     }
 

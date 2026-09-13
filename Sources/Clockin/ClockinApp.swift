@@ -125,6 +125,7 @@ private struct MenuBarStatusLabel: View {
     @AppStorage("Clockin.MinimalShowEarnings") private var showEarnings = true
     @AppStorage("Clockin.MinimalShowTRY") private var showTRY = true
     @AppStorage("Clockin.MinimalShowGoal") private var showGoal = false
+    @AppStorage("Clockin.MinimalShowSeconds") private var showSeconds = false
     @AppStorage("Clockin.GoalDailyHours") private var dailyGoalHours = 0.0
     @AppStorage("Clockin.GoalMonthlyHours") private var monthlyGoalHours = 0.0
     @State private var now = Date()
@@ -150,7 +151,7 @@ private struct MenuBarStatusLabel: View {
         let earnings = store.running != nil ? store.currentEarnings(at: date) : store.todayEarnings(at: date)
         var parts: [String] = []
         if showHours {
-            parts.append(store.running != nil ? DurationText.clock(elapsed) : "T " + DurationText.compact(elapsed))
+            parts.append(store.running != nil ? DurationText.clock(elapsed, includeSeconds: showSeconds) : "T " + DurationText.compact(elapsed))
         }
         if showEarnings {
             parts.append(compactMoney(earnings, code: store.currencyCode))
@@ -169,7 +170,7 @@ private struct MenuBarStatusLabel: View {
         if parts.isEmpty {
             return store.running == nil ? "Ready" : (store.running?.isPaused == true ? "Paused" : "Clocked in")
         }
-        return parts.joined(separator: "  ·  ")
+        return parts.joined(separator: " · ")
     }
 
     private func goalPercent(elapsed: TimeInterval, goal: Double) -> Int {

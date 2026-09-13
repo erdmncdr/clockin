@@ -135,4 +135,12 @@ expect(reversedSessions.count == 1, "a reversed period range should not stop the
 expect(Calendar.current.component(.year, from: reversedSessions[0].start) == 2026,
        "with the range ignored, the year comes from today")
 
+// Menu cubugu saati saniyesiz gosterebilir; buyuk sayac saniyeyi korur.
+expect(DurationText.clock(0) == "00:00:00", "clock should pad zero")
+expect(DurationText.clock(3_661) == "01:01:01", "clock should show hours, minutes and seconds")
+expect(DurationText.clock(3_661, includeSeconds: false) == "01:01", "clock without seconds should drop them")
+expect(DurationText.clock(59, includeSeconds: false) == "00:00", "under a minute without seconds reads as zero minutes")
+expect(DurationText.clock(-5, includeSeconds: false) == "00:00", "negative intervals clamp to zero")
+expect(DurationText.clock(10 * 3600 + 59 * 60 + 59, includeSeconds: false) == "10:59", "minutes truncate rather than round")
+
 print("All manual validation tests passed.")
